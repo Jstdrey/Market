@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timedelta, timezone  # Импортируем инструменты для работы с датами и временем в UTC.
+from datetime import datetime, time, timedelta, timezone  # Импортируем инструменты для работы с датами и временем в UTC.
 from pathlib import Path  # Импортируем Path для удобной работы с путями к файлам.
 import sys  # Импортируем sys, чтобы завершать программу с кодом ошибки.
 
