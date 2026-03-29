@@ -78,6 +78,8 @@ def build_dataframe(candles, start_ms, end_ms, symbol, timeframe):  # Созда
     df = pd.DataFrame(candles, columns=["timestamp", "open", "high", "low", "close", "volume"])  # Создаем таблицу со стандартными колонками OHLCV.
     df = df.drop_duplicates(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)  # Удаляем возможные дубликаты, сортируем строки по времени и обновляем нумерацию.
     df = df[(df["timestamp"] >= start_ms) & (df["timestamp"] < end_ms)].copy()  # Оставляем только свечи внутри нужного периода и исключаем правую границу интервала.
+    if df.empty:  # Проверяем, остались ли свечи после фильтрации выбранного периода.
+        raise ValueError("После фильтрации диапазона не осталось свечей. Попробуйте расширить даты или сменить таймфрейм.")  # Сообщаем понятную ошибку, если запрошенный интервал не вернул данных.
     df["datetime"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True).dt.strftime("%Y-%m-%d %H:%M:%S")  # Создаем понятную колонку с датой и временем в UTC.
     df["symbol"] = symbol  # Добавляем колонку с торговой парой, чтобы в приложении можно было проверить соответствие выбранным настройкам.
     df["timeframe"] = timeframe  # Добавляем колонку с таймфреймом, чтобы исключить путаницу при повторном использовании старого data.csv.
