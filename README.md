@@ -89,6 +89,8 @@ server runtime volume.
 
 ## Notes For Future Codex Work
 
+- `CODEX_PROJECT_HANDOFF_PROMPT.md` contains a ready prompt for future Codex
+  instances that need to restore and continue the project from GitHub.
 - Do not use `git add .` without checking ignored and staged files.
 - Keep market data, cache files, logs, and optimization runtime state out of Git.
 - Add new strategies under `strategies/`; they will be picked up by
