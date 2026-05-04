@@ -1,0 +1,40 @@
+app_utf8_repair_tmp.py
+
+# Local environments and browser automation artifacts
+.venv/
+.playwright-cli/
+
+# Python generated files
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Streamlit/runtime logs and process files
+.streamlit_app.pid
+.streamlit_app_*.pid
+.tmp*.log
+*.log
+streamlit_run.log
+
+# Runtime state, generated reports, and deploy artifacts
+output/
+deploy/artifacts/
+deploy/runtime/
+strategy_profiles.json
+
+# Market data and local backtest state
+data.csv
+trades_log.csv
+data/cache/
+Данные и Бекстест/
+*.csv.gz
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.sqlite
+*.db
+*.pkl
+*.pickle

@@ -6,6 +6,55 @@ from strategies.base_strategy import BaseLoggingStrategy
 
 
 class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
+    CHART_INDICATOR_CONFIG = {
+        "vwma": {
+            "label": "VWMA",
+            "panel": "price",
+            "color": "#22c55e",
+            "default_visible": True,
+        },
+        "rsi": {
+            "label": "RSI",
+            "panel": "oscillator",
+            "color": "#38bdf8",
+            "default_visible": True,
+        },
+        "smi": {
+            "label": "SMI",
+            "panel": "oscillator",
+            "color": "#f97316",
+            "default_visible": True,
+        },
+        "ema_fast": {
+            "label": "EMA Fast",
+            "panel": "price",
+            "color": "#eab308",
+            "default_visible": True,
+        },
+        "ema_slow": {
+            "label": "EMA Slow",
+            "panel": "price",
+            "color": "#f43f5e",
+            "default_visible": True,
+        },
+    }
+    OPTIMIZATION_PARAM_WHITELIST = (
+        "vwma_length",
+        "rsi_length",
+        "smi_length",
+        "smi_smooth",
+        "ema_fast_length",
+        "ema_slow_length",
+        "rsi_threshold",
+        "smi_threshold",
+        "dca_1_percent",
+        "dca_2_percent",
+        "dca_3_percent",
+        "dca_4_percent",
+        "take_profit_percent",
+        "stop_loss_percent",
+    )
+
     """
     Backtrader adaptation of LIQ2 VWMA logic for this app.
 
@@ -29,20 +78,53 @@ class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
         ("hidden_downtrend_deviation_bps", 300),
         ("rsi_threshold", 40.0),
         ("smi_threshold", 0.0),
-        ("dca_1_size", 6.0),
-        ("dca_2_size", 12.0),
-        ("dca_3_size", 24.0),
-        ("dca_4_size", 48.0),
+        ("dca_1_percent", 1.0),
+        ("dca_2_percent", 2.0),
+        ("dca_3_percent", 4.0),
+        ("dca_4_percent", 8.0),
         ("dca_2_drawdown_bps", 150),
         ("dca_3_drawdown_bps", 300),
         ("dca_4_drawdown_bps", 600),
-        ("uptrend_take_profit_bps", 150),
-        ("downtrend_take_profit_bps", 100),
+        ("take_profit_percent", 1.5),
+        ("stop_loss_percent", 2.0),
         ("max_bars_in_trade", 50),
         ("losing_streak_limit", 3),
         ("cooldown_bars", 48),
         ("commission", 0.001),
     )
+
+    PARAMETER_SPECS = {
+        "vwma_length": {"type": "int", "min": 1, "max": 500, "step": 1, "label_ru": "Длина VWMA", "optimization_group": "indicator"},
+        "rsi_length": {"type": "int", "min": 2, "max": 200, "step": 1, "label_ru": "Длина RSI", "optimization_group": "indicator"},
+        "smi_length": {"type": "int", "min": 2, "max": 500, "step": 1, "label_ru": "Длина SMI", "optimization_group": "indicator"},
+        "smi_smooth": {"type": "int", "min": 1, "max": 100, "step": 1, "label_ru": "Сглаживание SMI", "optimization_group": "indicator"},
+        "ema_fast_length": {"type": "int", "min": 1, "max": 500, "step": 1, "label_ru": "Длина быстрой EMA", "optimization_group": "indicator"},
+        "ema_slow_length": {"type": "int", "min": 1, "max": 500, "step": 1, "label_ru": "Длина медленной EMA", "optimization_group": "indicator"},
+        "entry_profile": {
+            "type": "int",
+            "choices": [0, 1],
+            "label_ru": "Профиль входа",
+        },
+        "official_uptrend_deviation_bps": {"type": "int", "min": 0, "max": 10000, "step": 10, "label_ru": "Отклонение входа (официальный, ап-тренд), б.п."},
+        "official_downtrend_deviation_bps": {"type": "int", "min": 0, "max": 10000, "step": 10, "label_ru": "Отклонение входа (официальный, даун-тренд), б.п."},
+        "hidden_uptrend_deviation_bps": {"type": "int", "min": 0, "max": 10000, "step": 10, "label_ru": "Отклонение входа (скрытый, ап-тренд), б.п."},
+        "hidden_downtrend_deviation_bps": {"type": "int", "min": 0, "max": 10000, "step": 10, "label_ru": "Отклонение входа (скрытый, даун-тренд), б.п."},
+        "rsi_threshold": {"type": "float", "min": 0.0, "max": 100.0, "step": 0.5, "label_ru": "Порог RSI", "optimization_group": "indicator"},
+        "smi_threshold": {"type": "float", "min": -100.0, "max": 100.0, "step": 0.1, "label_ru": "Порог SMI", "optimization_group": "indicator"},
+        "dca_1_percent": {"type": "float", "min": 0.0, "max": 100.0, "step": 0.1, "label_ru": "Усреднение 1 (% депозита)", "optimization_group": "averaging"},
+        "dca_2_percent": {"type": "float", "min": 0.0, "gt": "dca_1_percent", "max": 100.0, "step": 0.1, "label_ru": "Усреднение 2 (% депозита)", "optimization_group": "averaging"},
+        "dca_3_percent": {"type": "float", "min": 0.0, "gt": "dca_2_percent", "max": 100.0, "step": 0.1, "label_ru": "Усреднение 3 (% депозита)", "optimization_group": "averaging"},
+        "dca_4_percent": {"type": "float", "min": 0.0, "gt": "dca_3_percent", "max": 100.0, "step": 0.1, "label_ru": "Усреднение 4 (% депозита)", "optimization_group": "averaging"},
+        "dca_2_drawdown_bps": {"type": "int", "min": 0, "max": 10000, "step": 10, "label_ru": "Просадка до усреднения 2, б.п."},
+        "dca_3_drawdown_bps": {"type": "int", "min": 0, "gt": "dca_2_drawdown_bps", "max": 10000, "step": 10, "label_ru": "Просадка до усреднения 3, б.п."},
+        "dca_4_drawdown_bps": {"type": "int", "min": 0, "gt": "dca_3_drawdown_bps", "max": 10000, "step": 10, "label_ru": "Просадка до усреднения 4, б.п."},
+        "take_profit_percent": {"type": "float", "min": 0.0, "max": 100.0, "step": 0.1, "label_ru": "Тейк-профит (%)", "optimization_group": "take_profit"},
+        "stop_loss_percent": {"type": "float", "min": 0.0, "max": 100.0, "step": 0.1, "label_ru": "Стоп-лосс (%)", "optimization_group": "stop_loss"},
+        "max_bars_in_trade": {"type": "int", "min": 1, "max": 10000, "step": 1, "label_ru": "Макс. свечей в сделке"},
+        "losing_streak_limit": {"type": "int", "min": 1, "max": 1000, "step": 1, "label_ru": "Лимит серии убытков"},
+        "cooldown_bars": {"type": "int", "min": 0, "max": 10000, "step": 1, "label_ru": "Пауза после серии (свечи)"},
+        "commission": {"type": "float", "min": 0.0, "max": 0.05, "step": 0.0001, "label_ru": "Комиссия"},
+    }
 
     def __init__(self):
         super().__init__()
@@ -75,10 +157,14 @@ class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
         self.first_entry_price = None
         self.entry_bar_index = None
         self.tp_ratio_for_trade = None
+        self.stop_loss_ratio_for_trade = None
         self.dca_filled = [False, False, False, False]
         self.order_to_dca_index = {}
         self.losing_streak = 0
         self.cooldown_until_bar = -1
+        self.initial_deposit = float(self.broker.getvalue())
+        self.pending_exit_reason = None
+        self.pending_averaging_count = None
 
     @staticmethod
     def _bps_to_ratio(value_bps):
@@ -112,17 +198,37 @@ class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
             return float("nan")
         return float(vwma_value) * (1.0 - self._active_deviation_ratio(offset=offset))
 
-    def _take_profit_ratio(self, regime_is_uptrend):
-        bps = self.p.uptrend_take_profit_bps if regime_is_uptrend else self.p.downtrend_take_profit_bps
-        return self._bps_to_ratio(bps)
+    def _take_profit_ratio(self):
+        return max(0.0, float(self.p.take_profit_percent)) / 100.0
 
-    def _dca_sizes(self):
+    def _stop_loss_ratio(self):
+        return max(0.0, float(self.p.stop_loss_percent)) / 100.0
+
+    def _dca_percentages(self):
         return [
-            float(self.p.dca_1_size),
-            float(self.p.dca_2_size),
-            float(self.p.dca_3_size),
-            float(self.p.dca_4_size),
+            float(self.p.dca_1_percent),
+            float(self.p.dca_2_percent),
+            float(self.p.dca_3_percent),
+            float(self.p.dca_4_percent),
         ]
+
+    def _position_size_from_deposit_percent(self, percent_of_deposit, execution_price):
+        if not self._is_finite(percent_of_deposit, execution_price):
+            return 0.0
+        if execution_price <= 0.0:
+            return 0.0
+
+        percent = max(0.0, float(percent_of_deposit))
+        if percent <= 0.0:
+            return 0.0
+
+        target_order_budget = self.initial_deposit * (percent / 100.0)
+        available_cash = max(0.0, float(self.broker.getcash()))
+        capped_budget = min(target_order_budget, available_cash)
+        denominator = float(execution_price) * (1.0 + float(self.p.commission))
+        if denominator <= 0.0:
+            return 0.0
+        return max(0.0, capped_budget / denominator)
 
     def _dca_drawdown_ratios(self):
         return [
@@ -131,6 +237,17 @@ class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
             self._bps_to_ratio(self.p.dca_3_drawdown_bps),
             self._bps_to_ratio(self.p.dca_4_drawdown_bps),
         ]
+
+    def _get_current_averaging_count(self):
+        filled_entries = sum(1 for is_filled in self.dca_filled if is_filled)
+        return max(0, int(filled_entries) - 1)
+
+    def _set_pending_close_metadata(self, exit_reason):
+        normalized_reason = str(exit_reason or "").strip().lower()
+        if normalized_reason not in {"take_profit", "stop_loss"}:
+            normalized_reason = "other"
+        self.pending_exit_reason = normalized_reason
+        self.pending_averaging_count = self._get_current_averaging_count()
 
     def _try_open_position(self):
         prev_level = self._active_entry_level(offset=-1)
@@ -148,10 +265,17 @@ class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
         if not (touched_level and reclaimed_above_level and filters_ok):
             return
 
-        regime_is_uptrend = self._is_uptrend(offset=-1)
-        self.tp_ratio_for_trade = self._take_profit_ratio(regime_is_uptrend=regime_is_uptrend)
+        self.pending_exit_reason = None
+        self.pending_averaging_count = None
+        self.tp_ratio_for_trade = self._take_profit_ratio()
+        self.stop_loss_ratio_for_trade = self._stop_loss_ratio()
 
-        first_size = self._dca_sizes()[0]
+        first_size = self._position_size_from_deposit_percent(
+            percent_of_deposit=self._dca_percentages()[0],
+            execution_price=float(current_open),
+        )
+        if first_size <= 0.0:
+            return
         self.order = self.buy(size=first_size)
         self.order_to_dca_index[self.order.ref] = 0
 
@@ -164,7 +288,7 @@ class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
             return False
 
         drawdowns = self._dca_drawdown_ratios()
-        sizes = self._dca_sizes()
+        percentages = self._dca_percentages()
 
         for dca_index in (1, 2, 3):
             if self.dca_filled[dca_index]:
@@ -172,7 +296,13 @@ class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
 
             trigger_price = self.first_entry_price * (1.0 - drawdowns[dca_index])
             if close_price <= trigger_price:
-                self.order = self.buy(size=sizes[dca_index])
+                dca_size = self._position_size_from_deposit_percent(
+                    percent_of_deposit=percentages[dca_index],
+                    execution_price=float(close_price),
+                )
+                if dca_size <= 0.0:
+                    continue
+                self.order = self.buy(size=dca_size)
                 self.order_to_dca_index[self.order.ref] = dca_index
                 return True
 
@@ -190,12 +320,27 @@ class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
         take_profit_price = avg_entry_price * (1.0 + self.tp_ratio_for_trade)
         return close_price >= take_profit_price
 
+    def _should_stop_loss(self):
+        if self.stop_loss_ratio_for_trade is None:
+            return False
+
+        close_price = self.data.close[0]
+        avg_entry_price = float(self.position.price)
+        if not self._is_finite(close_price, avg_entry_price) or avg_entry_price <= 0.0:
+            return False
+
+        stop_loss_price = avg_entry_price * (1.0 - self.stop_loss_ratio_for_trade)
+        return close_price <= stop_loss_price
+
     def _reset_trade_state(self):
         self.first_entry_price = None
         self.entry_bar_index = None
         self.tp_ratio_for_trade = None
+        self.stop_loss_ratio_for_trade = None
         self.dca_filled = [False, False, False, False]
         self.order_to_dca_index = {}
+        self.pending_exit_reason = None
+        self.pending_averaging_count = None
 
     def next(self):
         self.record_equity()
@@ -215,7 +360,13 @@ class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
         if self._try_dca_entry():
             return
 
+        if self._should_stop_loss():
+            self._set_pending_close_metadata("stop_loss")
+            self.order = self.close()
+            return
+
         if self._should_take_profit():
+            self._set_pending_close_metadata("take_profit")
             self.order = self.close()
             return
 
@@ -224,6 +375,7 @@ class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
 
         bars_held = len(self) - self.entry_bar_index + 1
         if bars_held >= int(self.p.max_bars_in_trade):
+            self._set_pending_close_metadata("other")
             self.order = self.close()
 
     def notify_order(self, order):
@@ -239,6 +391,9 @@ class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
                 self.order_to_dca_index.pop(order.ref, None)
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.order_to_dca_index.pop(order.ref, None)
+            if order.issell():
+                self.pending_exit_reason = None
+                self.pending_averaging_count = None
 
         super().notify_order(order)
 
@@ -247,6 +402,17 @@ class LIQ2VWMACompatibleStrategy(BaseLoggingStrategy):
 
         if not trade.isclosed:
             return
+
+        if self.trades_log and isinstance(self.trades_log[-1], dict):
+            trade_record = self.trades_log[-1]
+            exit_reason = self.pending_exit_reason if isinstance(self.pending_exit_reason, str) else ""
+            if exit_reason not in {"take_profit", "stop_loss", "other"}:
+                exit_reason = "other"
+            averaging_count = self.pending_averaging_count
+            if averaging_count is None:
+                averaging_count = self._get_current_averaging_count()
+            trade_record["exit_reason"] = exit_reason
+            trade_record["averaging_count"] = max(0, int(averaging_count))
 
         if float(trade.pnlcomm) < 0.0:
             self.losing_streak += 1

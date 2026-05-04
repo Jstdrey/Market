@@ -1,30 +1,82 @@
-import backtrader as bt  # Импортируем Backtrader, чтобы описать торговую стратегию на его классах.
+import backtrader as bt
 
-from strategies.base_strategy import BaseLoggingStrategy  # Импортируем базовую стратегию, чтобы переиспользовать общую логику логирования.
+from strategies.base_strategy import BaseLoggingStrategy
 
 
-class MovingAverageCrossStrategy(BaseLoggingStrategy):  # Создаем простую стратегию на пересечении двух скользящих средних с общим базовым логированием.
-    params = (  # Описываем параметры стратегии, чтобы их можно было легко менять при запуске.
-        ("fast_period", 10),  # Задаем период быстрой скользящей средней: 10 свечей.
-        ("slow_period", 20),  # Задаем период медленной скользящей средней: 20 свечей.
-        ("commission", 0.001),  # Сохраняем комиссию биржи, чтобы корректно рассчитывать размер покупки.
-    )  # Завершаем описание параметров стратегии.
+class MovingAverageCrossStrategy(BaseLoggingStrategy):
+    CHART_INDICATOR_CONFIG = {
+        "fast_sma": {
+            "label": "Fast SMA",
+            "panel": "price",
+            "color": "#38bdf8",
+            "default_visible": True,
+        },
+        "slow_sma": {
+            "label": "Slow SMA",
+            "panel": "price",
+            "color": "#f59e0b",
+            "default_visible": True,
+        },
+        "crossover": {
+            "label": "CrossOver",
+            "panel": "oscillator",
+            "color": "#a78bfa",
+            "default_visible": True,
+        },
+    }
+    OPTIMIZATION_PARAM_WHITELIST = (
+        "fast_period",
+        "slow_period",
+    )
 
-    def __init__(self):  # Создаем метод инициализации, который Backtrader вызывает при старте стратегии.
-        super().__init__()  # Инициализируем базовый класс, чтобы подготовить структуры для логирования и отслеживания ордеров.
-        self.fast_sma = bt.indicators.SimpleMovingAverage(self.data.close, period=self.params.fast_period)  # Строим быструю простую скользящую среднюю по ценам закрытия.
-        self.slow_sma = bt.indicators.SimpleMovingAverage(self.data.close, period=self.params.slow_period)  # Строим медленную простую скользящую среднюю по ценам закрытия.
-        self.crossover = bt.indicators.CrossOver(self.fast_sma, self.slow_sma)  # Создаем индикатор пересечения, который покажет момент смены сигнала.
+    PARAMETER_SPECS = {
+        "fast_period": {
+            "type": "int",
+            "min": 1,
+            "max": 200,
+            "step": 1,
+            "lt": "slow_period",
+            "label_ru": "Период быстрой SMA",
+            "optimization_group": "indicator",
+        },
+        "slow_period": {
+            "type": "int",
+            "min": 2,
+            "max": 500,
+            "step": 1,
+            "label_ru": "Период медленной SMA",
+            "optimization_group": "indicator",
+        },
+        "commission": {
+            "type": "float",
+            "min": 0.0,
+            "max": 0.05,
+            "step": 0.0001,
+            "label_ru": "Комиссия",
+        },
+    }
 
-    def next(self):  # Создаем главный метод стратегии, который выполняется на каждой новой свече.
-        self.record_equity()  # Сохраняем текущий капитал на каждой свече для будущего графика equity curve.
-        if self.order is not None:  # Проверяем, есть ли уже активный приказ в обработке.
-            return  # Если приказ еще не завершен, пропускаем текущую свечу.
-        if not self.position and self.crossover > 0:  # Проверяем, что позиции сейчас нет и быстрая SMA пересекла медленную снизу вверх.
-            current_price = self.data.close[0]  # Берем текущую цену закрытия, чтобы рассчитать размер покупки.
-            available_cash = self.broker.getcash()  # Получаем доступный кэш на счете.
-            size = available_cash / (current_price * (1 + self.params.commission))  # Рассчитываем размер покупки почти на весь капитал с учетом комиссии.
-            if size > 0:  # Проверяем, что рассчитанный размер позиции получился положительным.
-                self.order = self.buy(size=size)  # Отправляем приказ на покупку рассчитанного количества актива.
-        elif self.position and self.crossover < 0:  # Проверяем, что позиция уже открыта и быстрая SMA пересекла медленную сверху вниз.
-            self.order = self.close()  # Закрываем текущую позицию целиком.
+    params = (
+        ("fast_period", 10),
+        ("slow_period", 20),
+        ("commission", 0.001),
+    )
+
+    def __init__(self):
+        super().__init__()
+        self.fast_sma = bt.indicators.SimpleMovingAverage(self.data.close, period=self.params.fast_period)
+        self.slow_sma = bt.indicators.SimpleMovingAverage(self.data.close, period=self.params.slow_period)
+        self.crossover = bt.indicators.CrossOver(self.fast_sma, self.slow_sma)
+
+    def next(self):
+        self.record_equity()
+        if self.order is not None:
+            return
+        if not self.position and self.crossover > 0:
+            current_price = self.data.close[0]
+            available_cash = self.broker.getcash()
+            size = available_cash / (current_price * (1 + self.params.commission))
+            if size > 0:
+                self.order = self.buy(size=size)
+        elif self.position and self.crossover < 0:
+            self.order = self.close()
